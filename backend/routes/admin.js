@@ -22,8 +22,6 @@ router.get("/tenants", auth, superadminOnly, async (req, res) => {
         const totalLeads = await Lead.countDocuments({ organizationId: orgId });
         const totalDeals = await Deal.countDocuments({ organizationId: orgId });
         const memberCount = await User.countDocuments({ organizationId: orgId });
-
-        // 🔑 Revenue = actual payments received from this tenant
         const totalRevenue = (org.payments || []).reduce((sum, p) => sum + p.amount, 0);
 
         return {
@@ -68,7 +66,6 @@ router.get("/tenants/:orgId", auth, superadminOnly, async (req, res) => {
       { $group: { _id: "$stage", count: { $sum: 1 }, total: { $sum: "$amount" } } },
     ]);
 
-    // 🔑 Revenue = actual payments logged by Sai
     const totalRevenue = (org.payments || []).reduce((sum, p) => sum + p.amount, 0);
 
     res.json({
@@ -82,7 +79,7 @@ router.get("/tenants/:orgId", auth, superadminOnly, async (req, res) => {
   }
 });
 
-// 🔑 LOG A PAYMENT FROM A TENANT
+// Log a payment from a tenant
 router.post("/tenants/:orgId/payments", auth, superadminOnly, async (req, res) => {
   try {
     const { amount, type, note, paidAt } = req.body;
@@ -113,7 +110,7 @@ router.post("/tenants/:orgId/payments", auth, superadminOnly, async (req, res) =
   }
 });
 
-// 🔑 DELETE A PAYMENT (in case of mistake)
+// Delete a payment
 router.delete("/tenants/:orgId/payments/:paymentId", auth, superadminOnly, async (req, res) => {
   try {
     const org = await Organization.findById(req.params.orgId);
@@ -132,7 +129,7 @@ router.delete("/tenants/:orgId/payments/:paymentId", auth, superadminOnly, async
   }
 });
 
-// 🔑 UPDATE TENANT BILLING SETTINGS
+// Update tenant billing settings
 router.patch("/tenants/:orgId/billing", auth, superadminOnly, async (req, res) => {
   try {
     const { billingPlan, monthlyFee, setupFee } = req.body;
@@ -183,7 +180,6 @@ router.get("/stats", auth, superadminOnly, async (req, res) => {
     const totalLeads = await Lead.countDocuments({ organizationId: { $in: tenantOrgIds } });
     const totalDeals = await Deal.countDocuments({ organizationId: { $in: tenantOrgIds } });
 
-    // 🔑 Platform Revenue = sum of all actual payments received across all tenants
     const totalRevenue = tenantOrgs.reduce((sum, org) => {
       return sum + (org.payments || []).reduce((s, p) => s + p.amount, 0);
     }, 0);
