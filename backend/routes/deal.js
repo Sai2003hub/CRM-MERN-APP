@@ -7,7 +7,7 @@ import auth from "../middleware/auth.js";
 
 const router = express.Router();
 
-// GET DASHBOARD STATS - must be before /:id routes
+// GET DASHBOARD STATS
 router.get("/stats/dashboard", auth, async (req, res) => {
   try {
     const orgId = new mongoose.Types.ObjectId(req.organizationId);
@@ -15,47 +15,28 @@ router.get("/stats/dashboard", auth, async (req, res) => {
     const totalLeads = await Lead.countDocuments({ organizationId: orgId });
     const totalDeals = await Deal.countDocuments({ organizationId: orgId });
 
-    // Only Won deals contribute to revenue
     const wonDeals = await Deal.find({ organizationId: orgId, stage: "Won" });
 
-    // ── MRR ─────────────────────────────────────────────────────────────────
-    // Sum of subscription amounts on Won monthly deals
-    // Falls back to "monthly" if subscriptionType not set (old deals)
     const mrr = wonDeals
       .filter((d) => !d.subscriptionType || d.subscriptionType === "monthly")
       .reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
 
-    // ── ARR ─────────────────────────────────────────────────────────────────
-    // (MRR × 12) + sum of subscription amounts on Won annual deals
     const annualSubscriptions = wonDeals
       .filter((d) => d.subscriptionType === "annual")
       .reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
-    const arr = (mrr * 12) + annualSubscriptions;
+    const arr = mrr * 12 + annualSubscriptions;
 
-    // ── Setup Fees Collected ─────────────────────────────────────────────────
-    // Sum of setup fees across ALL Won deals — safely handle missing field
     const setupFeesCollected = wonDeals
       .reduce((sum, d) => sum + (Number(d.setupFee) || 0), 0);
 
-    // ── TCV — Total Contract Value ───────────────────────────────────────────
-    // ARR + all setup fees collected
     const tcv = arr + setupFeesCollected;
 
-    // Deals by stage breakdown
     const dealsByStage = await Deal.aggregate([
       { $match: { organizationId: orgId } },
       { $group: { _id: "$stage", count: { $sum: 1 }, total: { $sum: "$amount" } } },
     ]);
 
-    res.json({
-      totalLeads,
-      totalDeals,
-      mrr,
-      arr,
-      setupFeesCollected,
-      tcv,
-      dealsByStage,
-    });
+    res.json({ totalLeads, totalDeals, mrr, arr, setupFeesCollected, tcv, dealsByStage });
   } catch (error) {
     console.error("Stats error:", error);
     res.status(500).json({ message: "Failed to fetch stats" });
@@ -110,7 +91,7 @@ router.post("/convert/:leadId", auth, async (req, res) => {
   }
 });
 
-// UPDATE DEAL — auto-generate invite token when Sai marks deal as Won
+// UPDATE DEAL — generates invite token when deal is marked as Won
 router.put("/:id", auth, async (req, res) => {
   try {
     const deal = await Deal.findOne({
@@ -119,7 +100,6 @@ router.put("/:id", auth, async (req, res) => {
     });
     if (!deal) return res.status(404).json({ message: "Deal not found" });
 
-    // 🔑 If Sai marks deal as Won and no invite token yet → generate one
     if (
       req.role === "superadmin" &&
       req.body.stage === "Won" &&
@@ -156,7 +136,10 @@ router.get("/:id/invite", auth, async (req, res) => {
       return res.status(400).json({ message: "No invite token for this deal" });
     }
 
-    const inviteUrl = (process.env.FRONTEND_URL || "http://localhost:3000") + "/register?invite=" + deal.inviteToken;
+    const inviteUrl =
+      (process.env.FRONTEND_URL || "http://localhost:3000") +
+      "/register?invite=" +
+      deal.inviteToken;
 
     res.json({
       inviteUrl,
@@ -172,8 +155,7 @@ router.get("/:id/invite", auth, async (req, res) => {
 // GET ALL DEALS
 router.get("/", auth, async (req, res) => {
   try {
-    const deals = await Deal.find({ organizationId: req.organizationId })
-      .sort({ createdAt: -1 });
+    const deals = await Deal.find({ organizationId: req.organizationId }).sort({ createdAt: -1 });
     res.json(deals);
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch deals" });
