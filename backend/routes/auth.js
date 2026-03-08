@@ -7,7 +7,7 @@ import Deal from "../models/Deal.js";
 
 const router = express.Router();
 
-// ─── REGISTER (normal) ──────────────────────────────────────────────────────
+// REGISTER
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password, organizationName } = req.body;
@@ -49,8 +49,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// ─── REGISTER VIA INVITE ────────────────────────────────────────────────────
-// Will uses this endpoint when registering via Sai's invite link
+// REGISTER VIA INVITE
 router.post("/register-invite", async (req, res) => {
   try {
     const { password, organizationName, inviteToken } = req.body;
@@ -59,13 +58,11 @@ router.post("/register-invite", async (req, res) => {
       return res.status(400).json({ message: "Password and invite token are required" });
     }
 
-    // Find the deal with this invite token
     const deal = await Deal.findOne({ inviteToken, inviteStatus: "pending" });
     if (!deal) {
       return res.status(400).json({ message: "Invalid or expired invite link" });
     }
 
-    // Check if this email already has an account
     const existingUser = await User.findOne({ email: deal.invitedEmail });
     if (existingUser) {
       return res.status(400).json({ message: "An account with this email already exists" });
@@ -73,11 +70,9 @@ router.post("/register-invite", async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create Will's organization
     const orgName = organizationName || `${deal.invitedName}'s Organization`;
     const organization = await Organization.create({ name: orgName });
 
-    // Create Will's user account
     const user = await User.create({
       name: deal.invitedName,
       email: deal.invitedEmail,
@@ -86,15 +81,13 @@ router.post("/register-invite", async (req, res) => {
       organizationId: organization._id,
     });
 
-    // Link org owner
     organization.ownerId = user._id;
     await organization.save();
 
-    // Mark invite as accepted on the deal
     deal.inviteStatus = "accepted";
     await deal.save();
 
-    // Issue JWT so Will is logged in immediately after registering
+    // organizationId in token is how tenant isolation works
     const token = jwt.sign(
       {
         userId: user._id,
@@ -123,8 +116,7 @@ router.post("/register-invite", async (req, res) => {
   }
 });
 
-// ─── GET INVITE INFO ────────────────────────────────────────────────────────
-// Called when Will opens the invite link — pre-fills his name + email
+// GET INVITE INFO
 router.get("/invite-info/:token", async (req, res) => {
   try {
     const deal = await Deal.findOne({
@@ -146,7 +138,7 @@ router.get("/invite-info/:token", async (req, res) => {
   }
 });
 
-// ─── LOGIN ──────────────────────────────────────────────────────────────────
+// LOGIN
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -157,6 +149,7 @@ router.post("/login", async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
+    // organizationId in token is how tenant isolation works
     const token = jwt.sign(
       {
         userId: user._id,
@@ -184,7 +177,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// ─── GET CURRENT USER ───────────────────────────────────────────────────────
+// GET CURRENT USER
 router.get("/me", async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
