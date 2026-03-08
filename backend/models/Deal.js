@@ -11,22 +11,13 @@ const noteSchema = new mongoose.Schema(
 const dealSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
-
-    // 🔑 Subscription — the recurring payment
-    // amount = how much they pay per month OR per year
-    // subscriptionType = whether they pay monthly or annually
     amount: { type: Number, default: 0 },
     subscriptionType: {
       type: String,
       enum: ["monthly", "annual"],
       default: "monthly",
     },
-
-    // 🔑 Setup fee — one-time charge on top of subscription
-    // e.g. onboarding, implementation, custom dev work
-    // defaults to 0 (many deals have no setup fee)
     setupFee: { type: Number, default: 0 },
-
     stage: {
       type: String,
       default: "Open",
@@ -42,14 +33,13 @@ const dealSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Lead",
     },
-    // 🔑 Multi-tenancy: every deal belongs to an org
+    // Multi-tenancy: every deal belongs to an org
     organizationId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Organization",
       required: true,
     },
-
-    // 🔑 Invite system
+    // Invite system
     inviteToken: { type: String, default: null },
     inviteStatus: {
       type: String,
@@ -63,5 +53,4 @@ const dealSchema = new mongoose.Schema(
 );
 
 const Deal = mongoose.models.Deal || mongoose.model("Deal", dealSchema);
-
 export default Deal;
