@@ -20,7 +20,7 @@ const leadSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Check if model exists before creating to avoid OverwriteModelError
+
 const Lead = mongoose.models.Lead || mongoose.model("Lead", leadSchema);
 
 export default Lead;
