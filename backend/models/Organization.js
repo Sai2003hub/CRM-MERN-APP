@@ -16,7 +16,7 @@ const organizationSchema = new mongoose.Schema(
     ownerId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     isActive: { type: Boolean, default: true },
 
-    // 🔑 Billing — what this tenant pays Sai
+    
     billingPlan: {
       type: String,
       enum: ["monthly", "annual"],
@@ -25,7 +25,7 @@ const organizationSchema = new mongoose.Schema(
     monthlyFee: { type: Number, default: 0 },
     setupFee: { type: Number, default: 0 },
 
-    // 🔑 Actual payments received from this tenant
+    
     payments: [paymentSchema],
   },
   { timestamps: true }
