@@ -4,13 +4,13 @@ import auth from "../middleware/auth.js";
 
 const router = express.Router();
 
-// CREATE LEAD - scoped to tenant's org
+// CREATE LEAD
 router.post("/", auth, async (req, res) => {
   try {
     const lead = await Lead.create({
       ...req.body,
       owner: req.userId,
-      organizationId: req.organizationId, // 🔑 tenant isolation
+      organizationId: req.organizationId,
     });
     res.status(201).json(lead);
   } catch (error) {
@@ -18,22 +18,21 @@ router.post("/", auth, async (req, res) => {
   }
 });
 
-// GET ALL LEADS - only this tenant's leads
+// GET ALL LEADS
 router.get("/", auth, async (req, res) => {
   try {
-    const leads = await Lead.find({ organizationId: req.organizationId }) // 🔑
-      .sort({ createdAt: -1 });
+    const leads = await Lead.find({ organizationId: req.organizationId }).sort({ createdAt: -1 });
     res.json(leads);
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch leads", error: error.message });
   }
 });
 
-// UPDATE LEAD - must belong to this org
+// UPDATE LEAD
 router.put("/:id", auth, async (req, res) => {
   try {
     const lead = await Lead.findOneAndUpdate(
-      { _id: req.params.id, organizationId: req.organizationId }, // 🔑
+      { _id: req.params.id, organizationId: req.organizationId },
       req.body,
       { new: true }
     );
@@ -101,7 +100,10 @@ router.delete("/:id/notes/:noteId", auth, async (req, res) => {
 // DELETE LEAD
 router.delete("/:id", auth, async (req, res) => {
   try {
-    const lead = await Lead.findOneAndDelete({ _id: req.params.id, organizationId: req.organizationId });
+    const lead = await Lead.findOneAndDelete({
+      _id: req.params.id,
+      organizationId: req.organizationId,
+    });
     if (!lead) return res.status(404).json({ message: "Lead not found" });
     res.json({ message: "Lead deleted" });
   } catch (error) {
