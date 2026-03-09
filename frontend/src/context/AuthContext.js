@@ -1,33 +1,46 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState } from 'react';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token') || null);
-  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
+  const [user, setUser] = useState(() => {
+    const stored = localStorage.getItem('user');
+    return stored ? JSON.parse(stored) : null;
+  });
 
-  useEffect(() => {
-    if (token) {
-      localStorage.setItem('token', token);
-      setIsAuthenticated(true);
-    } else {
-      localStorage.removeItem('token');
-      setIsAuthenticated(false);
-    }
-  }, [token]);
+  const isAuthenticated = !!token;
 
-  const loginUser = (newToken) => {
+
+  const isSuperAdmin = user?.role === 'superadmin';
+
+
+  const hasOrg = !!user?.organizationId;
+
+  const loginUser = (newToken, userData) => {
     setToken(newToken);
+    setUser(userData);
+    localStorage.setItem('token', newToken);
+    localStorage.setItem('user', JSON.stringify(userData));
   };
 
   const logoutUser = () => {
     setToken(null);
+    setUser(null);
     localStorage.removeItem('token');
-    setIsAuthenticated(false);
+    localStorage.removeItem('user');
   };
 
   return (
-    <AuthContext.Provider value={{ token, isAuthenticated, loginUser, logoutUser }}>
+    <AuthContext.Provider value={{
+      token,
+      user,
+      isAuthenticated,
+      isSuperAdmin,
+      hasOrg,
+      loginUser,
+      logoutUser,
+    }}>
       {children}
     </AuthContext.Provider>
   );
