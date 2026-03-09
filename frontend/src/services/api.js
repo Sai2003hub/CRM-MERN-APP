@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'https://crm-mern-app-five.vercel.app',
+  baseURL: 'https://crm-backend-0i2h.onrender.com',
 });
 
 API.interceptors.request.use((config) => {
