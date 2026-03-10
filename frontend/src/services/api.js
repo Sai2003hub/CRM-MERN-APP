@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'https://crm-backend-0i2h.onrender.com',
+  baseURL: 'https://crm-backend-0i2h.onrender.com/api',
 });
 
 API.interceptors.request.use((config) => {
