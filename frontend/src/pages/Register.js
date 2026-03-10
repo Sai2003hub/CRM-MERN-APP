@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { register, getInviteInfo, registerViaInvite } from '../services/api';
+import { register, login, getInviteInfo, registerViaInvite } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 
 const Register = () => {
@@ -55,6 +55,7 @@ const Register = () => {
 
     try {
       if (isInviteMode) {
+        // Invite flow — token + auto login
         const res = await registerViaInvite({
           password: form.password,
           organizationName: form.organizationName,
@@ -64,9 +65,12 @@ const Register = () => {
         setSuccess('Account created! Redirecting to your CRM...');
         setTimeout(() => navigate('/dashboard'), 1500);
       } else {
+        // Normal registration — auto login after, go straight to dashboard
         await register(form);
-        setSuccess('Registration successful! Redirecting to login...');
-        setTimeout(() => navigate('/login'), 2000);
+        const loginRes = await login({ email: form.email, password: form.password });
+        loginUser(loginRes.data.token, loginRes.data.user);
+        setSuccess('Registration successful! Welcome to your CRM 🎉');
+        setTimeout(() => navigate('/dashboard'), 1500);
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
@@ -120,14 +124,12 @@ const Register = () => {
             readOnly={isInviteMode}
             style={{ ...styles.input, ...(isInviteMode ? styles.readOnly : {}) }}
           />
-          {isInviteMode && (
-            <p style={styles.hint}>✓ Pre-filled from your invite</p>
-          )}
+          {isInviteMode && <p style={styles.hint}>✓ Pre-filled from your invite</p>}
 
           <label style={styles.label}>Organization Name</label>
           <input
             name="organizationName" type="text"
-            placeholder={isInviteMode ? `${form.name}'s Organization` : "e.g. Acme Corp"}
+            placeholder={isInviteMode ? `${form.name}'s Organization` : 'e.g. Acme Corp'}
             value={form.organizationName} onChange={handleChange}
             style={styles.input}
           />
