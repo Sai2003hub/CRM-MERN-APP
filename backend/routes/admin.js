@@ -72,14 +72,13 @@ router.get("/tenants/:orgId", auth, superadminOnly, async (req, res) => {
       organization: org,
       members,
       stats: { totalLeads, totalDeals, totalRevenue, dealsByStage },
-      // recentLeads + recentDeals intentionally omitted — tenant data is private
     });
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch tenant details" });
   }
 });
 
-// Log a payment from a tenant
+// LOG A PAYMENT FROM A TENANT
 router.post("/tenants/:orgId/payments", auth, superadminOnly, async (req, res) => {
   try {
     const { amount, type, note, paidAt } = req.body;
@@ -110,7 +109,7 @@ router.post("/tenants/:orgId/payments", auth, superadminOnly, async (req, res) =
   }
 });
 
-// Delete a payment
+// DELETE A PAYMENT
 router.delete("/tenants/:orgId/payments/:paymentId", auth, superadminOnly, async (req, res) => {
   try {
     const org = await Organization.findById(req.params.orgId);
@@ -129,7 +128,7 @@ router.delete("/tenants/:orgId/payments/:paymentId", auth, superadminOnly, async
   }
 });
 
-// Update tenant billing settings
+// UPDATE TENANT BILLING SETTINGS
 router.patch("/tenants/:orgId/billing", auth, superadminOnly, async (req, res) => {
   try {
     const { billingPlan, monthlyFee, setupFee } = req.body;
@@ -163,6 +162,28 @@ router.patch("/tenants/:orgId/toggle", auth, superadminOnly, async (req, res) =>
     res.json({ message: "Organization " + (org.isActive ? "activated" : "deactivated"), org });
   } catch (error) {
     res.status(500).json({ message: "Failed to toggle tenant" });
+  }
+});
+
+// DELETE TENANT — permanently removes org, users, leads, and deals
+router.delete("/tenants/:orgId", auth, superadminOnly, async (req, res) => {
+  try {
+    const org = await Organization.findById(req.params.orgId);
+    if (!org) return res.status(404).json({ message: "Organization not found" });
+
+    if (org.ownerId && org.ownerId.toString() === req.userId.toString()) {
+      return res.status(403).json({ message: "Cannot delete your own organization" });
+    }
+
+    const orgId = org._id;
+    await Lead.deleteMany({ organizationId: orgId });
+    await Deal.deleteMany({ organizationId: orgId });
+    await User.deleteMany({ organizationId: orgId });
+    await Organization.findByIdAndDelete(orgId);
+
+    res.json({ message: "Tenant and all associated data permanently deleted" });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to delete tenant" });
   }
 });
 
