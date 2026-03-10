@@ -59,6 +59,7 @@ export const getAdminStats = () => API.get('/admin/stats');
 export const getAllTenants = () => API.get('/admin/tenants');
 export const getTenantDetails = (orgId) => API.get(`/admin/tenants/${orgId}`);
 export const toggleTenantStatus = (orgId) => API.patch(`/admin/tenants/${orgId}/toggle`);
+export const deleteTenant = (orgId) => API.delete(`/admin/tenants/${orgId}`);
 export const logTenantPayment = (orgId, data) => API.post(`/admin/tenants/${orgId}/payments`, data);
 export const deleteTenantPayment = (orgId, paymentId) => API.delete(`/admin/tenants/${orgId}/payments/${paymentId}`);
 export const updateTenantBilling = (orgId, data) => API.patch(`/admin/tenants/${orgId}/billing`, data);
