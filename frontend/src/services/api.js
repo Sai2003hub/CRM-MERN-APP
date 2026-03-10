@@ -1,14 +1,31 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'https://crm-backend-0i2h.onrender.com/api',
+  baseURL: process.env.REACT_APP_API_URL,
 });
 
+// Attach JWT token to every outgoing request
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
+
+// Redirect suspended tenants to /suspended page on every 403
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (
+      error.response?.status === 403 &&
+      error.response?.data?.message?.includes('suspended')
+    ) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/suspended';
+    }
+    return Promise.reject(error);
+  }
+);
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
 export const register = (data) => API.post('/auth/register', data);
