@@ -1,11 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getAllTenants, toggleTenantStatus } from '../services/api';
+import { getAllTenants, toggleTenantStatus, deleteTenant } from '../services/api';
+
+// ── Confirm Modal ──────────────────────────────────────────────────────────
+const ConfirmModal = ({ isOpen, title, message, confirmLabel = 'Delete', confirmColor = '#dc3545', onConfirm, onCancel }) => {
+  if (!isOpen) return null;
+  return (
+    <div style={modalStyles.overlay} onClick={onCancel}>
+      <div style={modalStyles.box} onClick={(e) => e.stopPropagation()}>
+        <div style={modalStyles.iconWrap}>
+          <span style={{ ...modalStyles.icon, background: confirmColor + '18', color: confirmColor }}>🗑</span>
+        </div>
+        <h3 style={modalStyles.title}>{title}</h3>
+        <p style={modalStyles.message}>{message}</p>
+        <div style={modalStyles.actions}>
+          <button onClick={onCancel} style={modalStyles.cancelBtn}>Cancel</button>
+          <button onClick={onConfirm} style={{ ...modalStyles.confirmBtn, background: confirmColor }}>{confirmLabel}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const modalStyles = {
+  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
+  box: { background: 'white', borderRadius: '16px', padding: '32px 28px 24px', maxWidth: '380px', width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', textAlign: 'center' },
+  iconWrap: { marginBottom: '16px' },
+  icon: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '52px', height: '52px', borderRadius: '50%', fontSize: '22px' },
+  title: { margin: '0 0 8px', fontSize: '18px', fontWeight: '700', color: '#1a1a1a' },
+  message: { margin: '0 0 24px', fontSize: '14px', color: '#666', lineHeight: '1.5' },
+  actions: { display: 'flex', gap: '10px', justifyContent: 'center' },
+  cancelBtn: { flex: 1, padding: '10px', background: '#f5f5f5', color: '#333', border: '1px solid #e0e0e0', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' },
+  confirmBtn: { flex: 1, padding: '10px', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '600' },
+};
 
 const AdminTenants = () => {
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [modal, setModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
 
   useEffect(() => { fetchTenants(); }, []);
 
@@ -20,6 +53,9 @@ const AdminTenants = () => {
     }
   };
 
+  const openModal = (title, message, onConfirm) => setModal({ isOpen: true, title, message, onConfirm });
+  const closeModal = () => setModal({ isOpen: false, title: '', message: '', onConfirm: null });
+
   const handleToggle = async (orgId) => {
     try {
       await toggleTenantStatus(orgId);
@@ -27,6 +63,22 @@ const AdminTenants = () => {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handleDelete = (orgId, orgName) => {
+    openModal(
+      'Delete Tenant',
+      `"${orgName}" and all their leads, deals, and users will be permanently deleted. This action cannot be undone.`,
+      async () => {
+        closeModal();
+        try {
+          await deleteTenant(orgId);
+          fetchTenants();
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    );
   };
 
   const filtered = tenants.filter(
@@ -39,6 +91,14 @@ const AdminTenants = () => {
 
   return (
     <div style={styles.container}>
+      <ConfirmModal
+        isOpen={modal.isOpen}
+        title={modal.title}
+        message={modal.message}
+        onConfirm={modal.onConfirm}
+        onCancel={closeModal}
+      />
+
       <div style={styles.header}>
         <div>
           <h1 style={styles.title}>All Tenants</h1>
@@ -97,6 +157,12 @@ const AdminTenants = () => {
                 >
                   {tenant.isActive ? 'Disable' : 'Enable'}
                 </button>
+                <button
+                  onClick={() => handleDelete(tenant._id, tenant.name)}
+                  style={styles.deleteBtn}
+                >
+                  Delete
+                </button>
               </div>
             </div>
           ))
@@ -131,6 +197,7 @@ const styles = {
   actions: { display: 'flex', gap: '8px' },
   viewBtn: { flex: 1, padding: '8px', backgroundColor: '#1a1f2e', color: 'white', borderRadius: '7px', textDecoration: 'none', fontSize: '13px', fontWeight: '600', textAlign: 'center' },
   toggleBtn: { flex: 1, padding: '8px', borderRadius: '7px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' },
+  deleteBtn: { padding: '8px 14px', backgroundColor: '#dc2626', color: 'white', border: 'none', borderRadius: '7px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' },
 };
 
 export default AdminTenants;
