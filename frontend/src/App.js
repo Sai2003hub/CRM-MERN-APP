@@ -10,6 +10,7 @@ import Deals from './pages/Deals';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminTenants from './pages/AdminTenants';
 import AdminTenantDetail from './pages/AdminTenantDetail';
+import Suspended from './pages/Suspended';
 
 
 const AdminRoute = ({ children }) => {
@@ -58,13 +59,17 @@ function App() {
             <Route path="/leads" element={<OrgRoute><Leads /></OrgRoute>} />
             <Route path="/deals" element={<OrgRoute><Deals /></OrgRoute>} />
 
+
+          
             {/* Admin routes — superadmin only */}
             <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             <Route path="/admin/tenants" element={<AdminRoute><AdminTenants /></AdminRoute>} />
             <Route path="/admin/tenants/:orgId" element={<AdminRoute><AdminTenantDetail /></AdminRoute>} />
 
+            <Route path="/suspended" element={<Suspended />} />
             <Route path="/" element={<Navigate to="/dashboard" />} />
             <Route path="*" element={<Navigate to="/dashboard" />} />
+          
           </Routes>
         </div>
       </Router>
