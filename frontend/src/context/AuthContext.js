@@ -6,15 +6,16 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token') || null);
   const [user, setUser] = useState(() => {
     const stored = localStorage.getItem('user');
-    return stored ? JSON.parse(stored) : null;
+    try {
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      localStorage.removeItem('user');
+      return null;
+    }
   });
 
   const isAuthenticated = !!token;
-
-
   const isSuperAdmin = user?.role === 'superadmin';
-
-
   const hasOrg = !!user?.organizationId;
 
   const loginUser = (newToken, userData) => {
