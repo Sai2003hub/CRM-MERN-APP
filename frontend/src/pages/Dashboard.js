@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { getDashboardStats } from '../services/api';
 
+const defaultStats = {
+  totalLeads: 0,
+  totalDeals: 0,
+  mrr: 0,
+  arr: 0,
+  setupFeesCollected: 0,
+  tcv: 0,
+  dealsByStage: [],
+};
+
 const Dashboard = () => {
-  const [stats, setStats] = useState({
-    totalLeads: 0,
-    totalDeals: 0,
-    mrr: 0,
-    arr: 0,
-    setupFeesCollected: 0,
-    tcv: 0,
-    dealsByStage: [],
-  });
+  const [stats, setStats] = useState(defaultStats);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { fetchStats(); }, []);
@@ -21,6 +23,7 @@ const Dashboard = () => {
       setStats(response.data);
     } catch (error) {
       console.error('Failed to fetch stats:', error);
+      setStats(defaultStats);
     } finally {
       setLoading(false);
     }
